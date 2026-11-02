@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KorteCerto | Otimizador de Chapas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#">
+        <span class="brand-mark">KC</span>
+        <span class="brand-copy"><strong>KORTE<span>CERTO</span></strong><small>OTIMIZADOR DE CHAPAS</small></span>
+      </a>
+      <div class="header-status"><span class="status-dot"></span> OTIMIZAÇÃO 2D</div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <div class="eyebrow">PLANEJAMENTO DE CORTE</div>
+          <h1>Otimizador de <span>chapas.</span></h1>
+          <p>Organize os cortes, reduza desperdícios e visualize o aproveitamento de cada chapa.</p>
+        </div>
+        <div class="intro-badge"><span>▦</span>
+          <div><strong>Corte bidimensional</strong><small>Peças retangulares • mm</small></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel parts-panel">
+          <div class="panel-heading">
+            <div>
+              <div class="section-kicker">01 / LISTA DE CORTE</div>
+              <h2>Peças necessárias</h2>
+            </div>
+            <span class="count-pill" id="partCount">0 itens</span>
+          </div>
+          <p class="panel-description">Informe largura, altura e quantidade de cada peça.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>PEÇA</th>
+                  <th>LARGURA <small>(mm)</small></th>
+                  <th>ALTURA <small>(mm)</small></th>
+                  <th>QTD.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="partsBody"></tbody>
+            </table>
+          </div>
+          <button class="add-button" id="addPart" type="button"><span>＋</span> Adicionar peça</button>
+          <div class="parts-tip"><span>ⓘ</span> As dimensões são consideradas como medidas finais da peça.</div>
+        </div>
+
+        <aside class="panel settings-panel">
+          <div class="panel-heading">
+            <div>
+              <div class="section-kicker">02 / PARÂMETROS</div>
+              <h2>Configuração</h2>
+            </div><span class="settings-icon">⚙</span>
+          </div>
+          <div class="field-group">
+            <label for="sheetPreset">MODELO DE CHAPA</label>
+            <select id="sheetPreset">
+              <option value="2750x1850">2750 × 1850 mm</option>
+              <option value="2800x2070">2800 × 2070 mm</option>
+              <option value="3050x1850">3050 × 1850 mm</option>
+              <option value="custom">Personalizado</option>
+            </select>
+          </div>
+          <div class="dimensions-grid" id="customDimensions" hidden>
+            <div class="field-group"><label for="sheetWidth">LARGURA (mm)</label><input id="sheetWidth" type="number"
+                min="1" value="2750"></div>
+            <div class="field-group"><label for="sheetHeight">ALTURA (mm)</label><input id="sheetHeight" type="number"
+                min="1" value="1850"></div>
+          </div>
+          <div class="field-group">
+            <label for="kerf">ESPESSURA DO CORTE / KERF (mm)</label>
+            <input id="kerf" type="number" min="0" step="0.1" value="4">
+            <small class="field-hint">Espaço reservado entre peças.</small>
+          </div>
+          <div class="toggle-row">
+            <div><strong>Permitir rotação</strong><small>Girar peças em 90° quando necessário.</small></div>
+            <label class="switch"><input id="allowRotation" type="checkbox" checked><span></span></label>
+          </div>
+          <div class="settings-note"><strong>Estratégia de encaixe</strong><span>Best Short Side Fit — posiciona as
+              peças nos espaços livres disponíveis.</span></div>
+          <button class="primary-button" id="optimizeBtn" type="button"><span>✳</span> Otimizar cortes</button>
+          <button class="secondary-button" id="clearBtn" type="button">Limpar projeto</button>
+        </aside>
+      </section>
+
+      <div class="error-box" id="errorBox" role="alert" hidden></div>
+
+      <section class="results-section" id="resultsSection" hidden>
+        <div class="results-heading">
+          <div>
+            <div class="section-kicker">03 / RESULTADO</div>
+            <h2>Plano de corte</h2>
+            <p id="resultSummary">Resultado da otimização.</p>
+          </div><button class="print-button" id="printBtn" type="button">▤ Imprimir plano</button>
+        </div>
+        <div class="metrics-grid">
+          <article class="metric-card"><span>CHAPAS UTILIZADAS</span><strong
+              id="metricSheets">0</strong><small>unidades</small></article>
+          <article class="metric-card"><span>APROVEITAMENTO</span><strong id="metricYield">0%</strong><small>área das
+              peças / área total</small></article>
+          <article class="metric-card"><span>ÁREA DE PEÇAS</span><strong id="metricPartsArea">0
+              m²</strong><small>somatório das peças</small></article>
+          <article class="metric-card"><span>ÁREA NÃO UTILIZADA</span><strong id="metricWaste">0
+              m²</strong><small>sobras e perdas</small></article>
+        </div>
+        <div id="plansContainer" class="plans-container"></div>
+        <div class="result-footnote">O encaixe é heurístico e não garante o aproveitamento matematicamente ótimo. A
+          sequência física de corte deve ser validada antes da produção.</div>
+      </section>
+    </main>
+    <footer><span>KorteCerto <b>•</b> Ferramenta de apoio à produção</span><span>VERSÃO INICIAL 2D</span></footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+
+</html>
