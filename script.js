@@ -33,19 +33,37 @@ function updateCount() {
   document.getElementById("partCount").textContent = `${count} ${count === 1 ? "item" : "itens"}`;
 }
 document.getElementById("addPart").addEventListener("click", () => addPartRow().querySelector(".part-width").focus());
-document.getElementById("sheetPreset").addEventListener("change", e => {
-  document.getElementById("customDimensions").hidden = e.target.value !== "custom";
-});
+const sheetWidthInput = document.getElementById("sheetWidth");
+const sheetHeightInput = document.getElementById("sheetHeight");
+
+function updateSheetDimensions() {
+  const preset = document.getElementById("sheetPreset").value;
+  const isCustom = preset === "custom";
+
+  // Nos modelos prontos, os campos exibem as medidas do modelo e ficam bloqueados.
+  // Em Personalizado, os campos são liberados para edição manual.
+  sheetWidthInput.disabled = !isCustom;
+  sheetHeightInput.disabled = !isCustom;
+
+  if (!isCustom) {
+    const [width, height] = preset.split("x").map(Number);
+    sheetWidthInput.value = width;
+    sheetHeightInput.value = height;
+  }
+}
+
+document.getElementById("sheetPreset").addEventListener("change", updateSheetDimensions);
+updateSheetDimensions();
 document.getElementById("clearBtn").addEventListener("click", () => {
   partsBody.innerHTML = ""; rowCounter = 0; addPartRow();
   errorBox.hidden = true; resultsSection.hidden = true;
 });
 
 function getSheetSize() {
-  const preset = document.getElementById("sheetPreset").value;
-  if (preset === "custom") return { w: Number(document.getElementById("sheetWidth").value), h: Number(document.getElementById("sheetHeight").value) };
-  const [w, h] = preset.split("x").map(Number);
-  return { w, h };
+  return {
+    w: Number(sheetWidthInput.value),
+    h: Number(sheetHeightInput.value)
+  };
 }
 function readParts() {
   const parts = []; let id = 0;

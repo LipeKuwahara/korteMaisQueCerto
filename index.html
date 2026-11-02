@@ -27,7 +27,7 @@
       <section class="intro">
         <div>
           <div class="eyebrow">PLANEJAMENTO DE CORTE</div>
-          <h1>Otimizador de <span>chapas.</span></h1>
+          <h1>Otimizador de <span>chapas</span></h1>
           <p>Organize os cortes, reduza desperdícios e visualize o aproveitamento de cada chapa.</p>
         </div>
         <div class="intro-badge"><span>▦</span>
@@ -79,11 +79,11 @@
               <option value="custom">Personalizado</option>
             </select>
           </div>
-          <div class="dimensions-grid" id="customDimensions" hidden>
+          <div class="dimensions-grid" id="sheetDimensions">
             <div class="field-group"><label for="sheetWidth">LARGURA (mm)</label><input id="sheetWidth" type="number"
-                min="1" value="2750"></div>
+                min="1" step="1" value="2750" disabled></div>
             <div class="field-group"><label for="sheetHeight">ALTURA (mm)</label><input id="sheetHeight" type="number"
-                min="1" value="1850"></div>
+                min="1" step="1" value="1850" disabled></div>
           </div>
           <div class="field-group">
             <label for="kerf">ESPESSURA DO CORTE / KERF (mm)</label>
@@ -126,7 +126,7 @@
           sequência física de corte deve ser validada antes da produção.</div>
       </section>
     </main>
-    <footer><span>KorteCerto <b>•</b> Ferramenta de apoio à produção</span><span>VERSÃO INICIAL 2D</span></footer>
+    <footer><span>KorteCerto <b>•</b> Ferramenta de apoio à produção <b>•</b> Developer: LipeKuwahara </span><span>VERSÃO INICIAL 2D</span></footer>
   </div>
   <script src="script.js"></script>
 </body>
