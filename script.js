@@ -83,12 +83,64 @@ function intersects(a, b) { return !(b.x >= a.x + a.w || b.x + b.w <= a.x || b.y
 function contains(a, b) { return b.x >= a.x - 0.001 && b.y >= a.y - 0.001 && b.x + b.w <= a.x + a.w + 0.001 && b.y + b.h <= a.y + a.h + 0.001; }
 function splitFreeRect(free, used) {
   if (!intersects(free, used)) return [free];
-  const out = [];
-  if (used.x > free.x) out.push({ x: free.x, y: free.y, w: used.x - free.x, h: free.h });
-  if (used.x + used.w < free.x + free.w) out.push({ x: used.x + used.w, y: free.y, w: free.x + free.w - (used.x + used.w), h: free.h });
-  if (used.y > free.y) out.push({ x: free.x, y: free.y, w: free.w, h: used.y - free.y });
-  if (used.y + used.h < free.y + free.h) out.push({ x: free.x, y: used.y + used.h, w: free.w, h: free.y + free.h - (used.y + used.h) });
-  return out.filter(r => r.w > 0.001 && r.h > 0.001);
+
+  const rightWidth = free.x + free.w - (used.x + used.w);
+  const bottomHeight = free.y + free.h - (used.y + used.h);
+
+  const verticalSplit = [];
+
+  // Corte vertical: separa uma faixa à direita
+  if (rightWidth > 0.001) {
+    verticalSplit.push({
+      x: used.x + used.w,
+      y: free.y,
+      w: rightWidth,
+      h: free.h
+    });
+  }
+
+  // Corte horizontal: separa uma faixa inferior
+  if (bottomHeight > 0.001) {
+    verticalSplit.push({
+      x: free.x,
+      y: used.y + used.h,
+      w: used.w,
+      h: bottomHeight
+    });
+  }
+
+  const horizontalSplit = [];
+
+  // Corte horizontal: separa uma faixa inferior
+  if (bottomHeight > 0.001) {
+    horizontalSplit.push({
+      x: free.x,
+      y: used.y + used.h,
+      w: free.w,
+      h: bottomHeight
+    });
+  }
+
+  // Corte vertical: separa uma faixa à direita
+  if (rightWidth > 0.001) {
+    horizontalSplit.push({
+      x: used.x + used.w,
+      y: free.y,
+      w: rightWidth,
+      h: used.h
+    });
+  }
+
+  function evaluate(regions) {
+    if (!regions.length) return 0;
+
+    return Math.max(...regions.map(r => r.w * r.h));
+  }
+
+  // Escolhe a divisão que preserva o maior espaço retangular.
+  return evaluate(verticalSplit) >= evaluate(horizontalSplit)
+    ? verticalSplit
+    : horizontalSplit;
 }
 function pruneFreeRects(rects) {
   for (let i = 0; i < rects.length; i++) {
@@ -118,11 +170,29 @@ function findPosition(sheet, part, kerf, rotate) {
 }
 function compareScore(a, b) { for (let i = 0; i < a.length; i++) { if (a[i] < b[i] - 0.001) return -1; if (a[i] > b[i] + 0.001) return 1; } return 0; }
 function placeOnSheet(sheet, part, pos) {
-  const used = { x: pos.x, y: pos.y, w: pos.fw, h: pos.fh };
+  const used = {
+    x: pos.x,
+    y: pos.y,
+    w: pos.fw,
+    h: pos.fh
+  };
+
   let next = [];
-  for (const free of sheet.free) next.push(...splitFreeRect(free, used));
+
+  for (const free of sheet.free) {
+    next.push(...splitFreeRect(free, used));
+  }
+
   sheet.free = pruneFreeRects(next);
-  sheet.placements.push({ ...part, x: pos.x, y: pos.y, w: pos.w, h: pos.h, rot: pos.rot });
+
+  sheet.placements.push({
+    ...part,
+    x: pos.x,
+    y: pos.y,
+    w: pos.w,
+    h: pos.h,
+    rot: pos.rot
+  });
 }
 function optimize(parts, sw, sh, kerf, rotate) {
   const ordered = [...parts].sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h) || b.area - a.area);
