@@ -788,3 +788,56 @@ footer b {
         color: #555
     }
 }
+
+/* Ações da lista de peças */
+
+.parts-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 13px;
+}
+
+.parts-actions .add-button {
+    margin-top: 0;
+}
+
+.import-button {
+    border: 1px solid #b8d9dc;
+    background: #edf8f8;
+    color: var(--teal);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 10px 13px;
+    cursor: pointer;
+    transition: .2s;
+    white-space: nowrap;
+}
+
+.import-button:hover {
+    background: #dff1f2;
+    border-color: #8fc3c8;
+}
+
+.import-button span {
+    font-size: 16px;
+    margin-right: 5px;
+    vertical-align: -1px;
+}
+
+.import-button:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+@media(max-width:620px) {
+    .parts-actions {
+        align-items: stretch;
+    }
+
+    .parts-actions button {
+        flex: 1;
+    }
+}

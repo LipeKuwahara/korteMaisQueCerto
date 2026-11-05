@@ -60,7 +60,17 @@
               <tbody id="partsBody"></tbody>
             </table>
           </div>
-          <button class="add-button" id="addPart" type="button"><span>＋</span> Adicionar peça</button>
+          <div class="parts-actions">
+            <button class="import-button" id="importBtn" type="button">
+              <span>⇧</span> Importar planilha
+            </button>
+
+            <button class="add-button" id="addPart" type="button">
+              <span>＋</span> Adicionar peça
+            </button>
+
+            <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden>
+          </div>
           <div class="parts-tip"><span>ⓘ</span> As dimensões são consideradas como medidas finais da peça.</div>
         </div>
 
@@ -110,7 +120,9 @@
             <div class="section-kicker">03 / RESULTADO</div>
             <h2>Plano de corte</h2>
             <p id="resultSummary">Resultado da otimização.</p>
-          </div><button class="print-button" id="printBtn" type="button">▤ Imprimir plano</button>
+          </div>
+          <button class="print-button" id="printBtn" type="button">▤ Imprimir plano</button>
+          <button id="printLabelsBtn" class="add-button" type="button">Imprimir etiquetas</button>
         </div>
         <div class="metrics-grid">
           <article class="metric-card"><span>CHAPAS UTILIZADAS</span><strong
@@ -130,6 +142,8 @@
     <footer><span>KorteCerto <b>•</b> Ferramenta de apoio à produção <b>•</b> Developer: LipeKuwahara
       </span><span>VERSÃO INICIAL 2D</span></footer>
   </div>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 

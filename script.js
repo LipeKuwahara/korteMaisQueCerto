@@ -33,6 +33,227 @@ function updateCount() {
   document.getElementById("partCount").textContent = `${count} ${count === 1 ? "item" : "itens"}`;
 }
 document.getElementById("addPart").addEventListener("click", () => addPartRow().querySelector(".part-width").focus());
+
+// ==========================================
+// IMPORTAÇÃO DE PLANILHAS
+// ==========================================
+
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
+
+// Abre o seletor de arquivos
+importBtn.addEventListener("click", () => {
+  importFile.click();
+});
+
+// Normaliza os nomes dos cabeçalhos
+function normalizeHeader(value) {
+  return String(value)
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+// Converte os valores numéricos
+function parseImportedNumber(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const normalized = String(value)
+    .trim()
+    .replace(",", ".");
+
+  if (!normalized) return NaN;
+
+  return Number(normalized);
+}
+
+// Identifica as colunas da planilha
+function identifyColumns(headers) {
+  const normalizedHeaders = headers.map(normalizeHeader);
+
+  const aliases = {
+    width: ["LARGURA", "WIDTH"],
+    height: ["ALTURA", "HEIGHT"],
+    qty: ["QUANTIDADE", "QTD", "QTDE", "QUANTITY"]
+  };
+
+  const columns = {};
+
+  for (const key in aliases) {
+    columns[key] = normalizedHeaders.findIndex(header =>
+      aliases[key].includes(header)
+    );
+  }
+
+  const missing = Object.entries(columns)
+    .filter(([, index]) => index === -1)
+    .map(([key]) => {
+      const names = {
+        width: "LARGURA",
+        height: "ALTURA",
+        qty: "QUANTIDADE"
+      };
+
+      return names[key];
+    });
+
+  if (missing.length) {
+    throw new Error(
+      `Não foi possível identificar as seguintes colunas: ${missing.join(", ")}.`
+    );
+  }
+
+  return columns;
+}
+
+// Processa e valida todas as linhas
+function validateImportedRows(rows) {
+  if (!rows.length) {
+    throw new Error("A planilha está vazia.");
+  }
+
+  const columns = identifyColumns(rows[0]);
+  const importedParts = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+
+    const widthValue = row[columns.width];
+    const heightValue = row[columns.height];
+    const qtyValue = row[columns.qty];
+
+    const empty = [widthValue, heightValue, qtyValue]
+      .every(value => value === undefined || value === null || String(value).trim() === "");
+
+    if (empty) continue;
+
+    const width = parseImportedNumber(widthValue);
+    const height = parseImportedNumber(heightValue);
+    const qty = parseImportedNumber(qtyValue);
+
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      !Number.isInteger(qty) ||
+      width <= 0 ||
+      height <= 0 ||
+      qty <= 0
+    ) {
+      throw new Error(
+        `Dados inválidos na linha ${i + 1}. Verifique largura, altura e quantidade.`
+      );
+    }
+
+    importedParts.push({
+      width,
+      height,
+      qty
+    });
+  }
+
+  if (!importedParts.length) {
+    throw new Error("Nenhuma peça válida foi encontrada na planilha.");
+  }
+
+  return importedParts;
+}
+
+// Executa a importação
+async function processImport(file) {
+  try {
+    if (typeof XLSX === "undefined") {
+      throw new Error("A biblioteca de leitura de planilhas não foi carregada. Verifique sua conexão com a internet.");
+    }
+
+    importBtn.disabled = true;
+    importBtn.textContent = "Lendo planilha...";
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    if (!workbook.SheetNames.length) {
+      throw new Error("Nenhuma aba foi encontrada no arquivo.");
+    }
+
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+      raw: true
+    });
+
+    const importedParts = validateImportedRows(rows);
+
+    const totalPieces = importedParts.reduce(
+      (sum, part) => sum + part.qty,
+      0
+    );
+
+    let replaceExisting = false;
+
+    const hasExistingParts = partsBody.querySelectorAll("tr").length > 0;
+
+    if (hasExistingParts) {
+      const choice = window.confirm(
+        `Foram encontradas ${importedParts.length} tipos de peças, totalizando ${totalPieces} unidades.\n\n` +
+        "OK: Substituir as peças existentes.\n" +
+        "Cancelar: Adicionar às peças existentes."
+      );
+
+      replaceExisting = choice;
+    }
+
+    if (replaceExisting) {
+      partsBody.innerHTML = "";
+      rowCounter = 0;
+    }
+
+    importedParts.forEach(part => {
+      addPartRow(part.width, part.height, part.qty);
+    });
+
+    renumberRows();
+    updateCount();
+
+    errorBox.hidden = true;
+    resultsSection.hidden = true;
+
+    alert(
+      `Importação concluída!\n\n` +
+      `${importedParts.length} tipos de peças importados.\n` +
+      `${totalPieces} unidades no total.`
+    );
+
+  } catch (error) {
+    errorBox.textContent = error.message;
+    errorBox.hidden = false;
+
+    resultsSection.hidden = true;
+
+  } finally {
+    importBtn.disabled = false;
+    importBtn.innerHTML = "<span>⇧</span> Importar planilha";
+    importFile.value = "";
+  }
+}
+
+// Recebe o arquivo selecionado
+importFile.addEventListener("change", async event => {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  await processImport(file);
+});
+
 const sheetWidthInput = document.getElementById("sheetWidth");
 const sheetHeightInput = document.getElementById("sheetHeight");
 
@@ -191,6 +412,8 @@ function placeOnSheet(sheet, part, pos) {
     y: pos.y,
     w: pos.w,
     h: pos.h,
+    originalW: part.w,
+    originalH: part.h,
     rot: pos.rot
   });
 }
@@ -231,6 +454,7 @@ function renderPlan(sheet, index, sw, sh, kerf) {
   return `<article class="plan-card"><div class="plan-head"><strong>Chapa ${String(index + 1).padStart(2, "0")}</strong><span>${sheet.placements.length} peças • ${fmt(utilization)}% aproveitamento</span></div><div class="plan-svg-wrap">${svg}</div><div class="plan-legend"><span><i class="legend-dot" style="background:#d9eff0"></i>Peças</span><span><i class="legend-dot" style="background:#fff;border:1px solid #83969e"></i>Área restante</span><span>↻ Peça rotacionada</span></div><div class="plan-details"><span>Área ocupada: ${areaFmt(used)}</span><span>Kerf: ${fmt(kerf)} mm</span></div></article>`;
 }
 function showResults(sheets, parts, sw, sh, kerf) {
+  window.lastOptimizedSheets = sheets;
   const totalArea = sw * sh * sheets.length, partsArea = parts.reduce((sum, p) => sum + p.area, 0);
   document.getElementById("metricSheets").textContent = sheets.length;
   document.getElementById("metricYield").textContent = `${fmt(partsArea / totalArea * 100)}%`;
@@ -254,5 +478,117 @@ document.getElementById("optimizeBtn").addEventListener("click", () => {
     errorBox.textContent = error.message; errorBox.hidden = false; resultsSection.hidden = true;
   }
 });
+
 document.getElementById("printBtn").addEventListener("click", () => window.print());
 addPartRow();
+
+// ==========================================
+// IMPRESSÃO DE ETIQUETAS DOS VIDROS
+// ==========================================
+
+document.getElementById("printLabelsBtn").addEventListener("click", printGlassLabels);
+
+function printGlassLabels() {
+
+  const sheets = window.lastOptimizedSheets;
+
+  if (!sheets || !sheets.length) {
+    alert("Não existem chapas otimizadas para gerar etiquetas.");
+    return;
+  }
+
+  if (!window.jspdf) {
+    alert("A biblioteca de PDF não foi carregada. Verifique sua conexão.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+
+  // PDF com páginas de 100 x 100 mm
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [100, 100]
+  });
+
+  let firstPage = true;
+
+  sheets.forEach((sheet, sheetIndex) => {
+
+    sheet.placements.forEach((part) => {
+
+      if (!firstPage) {
+        pdf.addPage([100, 100], "portrait");
+      }
+
+      firstPage = false;
+
+      // Dimensões originais da peça
+      const width = part.originalW ?? part.w;
+      const height = part.originalH ?? part.h;
+
+      // Moldura
+      pdf.setDrawColor(40, 60, 70);
+      pdf.setLineWidth(0.5);
+      pdf.rect(5, 5, 90, 90);
+
+      // Cabeçalho
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("KORTECERTO", 50, 15, {
+        align: "center"
+      });
+
+      pdf.setDrawColor(160, 160, 160);
+      pdf.line(12, 20, 88, 20);
+
+      // Chapa
+      pdf.setFontSize(13);
+      pdf.text(
+        `CHAPA ${String(sheetIndex + 1).padStart(2, "0")}`,
+        50,
+        31,
+        { align: "center" }
+      );
+
+      // Identificação da peça
+      pdf.setFontSize(27);
+      pdf.text(part.label, 50, 49, {
+        align: "center"
+      });
+
+      // Medidas
+      pdf.setFontSize(17);
+      pdf.text(
+        `${fmt(width)} x ${fmt(height)} mm`,
+        50,
+        64,
+        { align: "center" }
+      );
+
+      // Informação de rotação
+      if (part.rot) {
+        pdf.setFontSize(9);
+        pdf.text("PECA ROTACIONADA", 50, 75, {
+          align: "center"
+        });
+      }
+
+      // Rodapé
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("IDENTIFICACAO DO VIDRO", 50, 86, {
+        align: "center"
+      });
+
+    });
+
+  });
+
+  // Abre o PDF em uma nova aba
+  const pdfBlob = pdf.output("blob");
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+
+  window.open(pdfUrl, "_blank");
+
+}
